@@ -1,10 +1,8 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
   if (req.method !== 'POST') {
-    return res.status(200).json({ version: '1.0', response: { text: 'Бот работает!', end_session: false } });
+    return res.status(200).json({ version: '1.0', response: { text: 'Бот работает через Groq!', end_session: false } });
   }
 
   try {
@@ -14,14 +12,30 @@ module.exports = async (req, res) => {
       return res.status(200).json({ version: '1.0', response: { text: 'Слушаю вас.', end_session: false } });
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-3.8-flash',
-      systemInstruction: 'Отвечай максимально кратко, не более 2-3 предложений. Твой ответ должен генерироваться очень быстро.'
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama3-8b-8192',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'Отвечай на русском языке максимально кратко, не более 2-3 предложений. Твой ответ должен генерироваться очень быстро.' 
+          },
+          { role: 'user', content: userText }
+        ]
+      })
     });
-    
-    const result = await model.generateContent(userText);
-    const responseText = result.response.text();
+
+    if (!response.ok) {
+      throw new Error(`Ошибка API: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const responseText = data.choices[0].message.content;
 
     return res.status(200).json({
       version: '1.0',
@@ -32,7 +46,7 @@ module.exports = async (req, res) => {
     console.error('Ошибка:', error);
     return res.status(200).json({
       version: '1.0',
-      response: { text: 'Серверы Google сейчас перегружены. Пожалуйста, повторите запрос позже.', end_session: false }
+      response: { text: 'Произошла ошибка при обращении к серверу. Попробуйте еще раз.', end_session: false }
     });
   }
 };
