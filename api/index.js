@@ -15,9 +15,8 @@ module.exports = async (req, res) => {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    // Добавлена жесткая инструкция для ускорения генерации
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-3.8-flash',
+      model: 'gemini-3.8-pro',
       systemInstruction: 'Отвечай максимально кратко, не более 2-3 предложений. Твой ответ должен генерироваться очень быстро.'
     });
     
