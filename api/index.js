@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
   try {
     const userText = req.body?.request?.command || req.body?.request?.original_utterance || '';
     
-    // Блокируем невидимые пробелы и пустые запросы от Яндекса
+    // Блокируем пустые запросы
     if (!userText.trim()) {
       return res.status(200).json({ version: '1.0', response: { text: 'Слушаю вас.', end_session: false } });
     }
@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama3-8b-8192',
+        model: 'openai/gpt-oss-20b', // <--- Актуальная бесплатная модель
         messages: [
           { 
             role: 'system', 
@@ -32,6 +32,8 @@ module.exports = async (req, res) => {
     });
 
     if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Детали ответа Groq:', errorData);
       throw new Error(`Ошибка API: ${response.status}`);
     }
 
