@@ -2,13 +2,13 @@ module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
   if (req.method !== 'POST') {
-    return res.status(200).json({ version: '1.0', response: { text: 'Бот работает через Groq!', end_session: false } });
+    return res.status(200).json({ version: '1.0', response: { text: 'Бот работает!', end_session: false } });
   }
 
   try {
-    const userText = req.body?.request?.command || '';
+    const userText = req.body?.request?.command || req.body?.request?.original_utterance || '';
     
-    if (!userText) {
+    if (!userText.trim()) {
       return res.status(200).json({ version: '1.0', response: { text: 'Слушаю вас.', end_session: false } });
     }
 
@@ -19,11 +19,11 @@ module.exports = async (req, res) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama3-8b-8192',
+        model: 'llama-3.1-8b-instant',
         messages: [
           { 
             role: 'system', 
-            content: 'Отвечай на русском языке максимально кратко, не более 2-3 предложений. Твой ответ должен генерироваться очень быстро.' 
+            content: 'Отвечай на русском языке максимально кратко, не более 2-3 предложений.' 
           },
           { role: 'user', content: userText }
         ]
@@ -31,6 +31,8 @@ module.exports = async (req, res) => {
     });
 
     if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Детали ответа Groq:', errorData);
       throw new Error(`Ошибка API: ${response.status}`);
     }
 
@@ -46,7 +48,7 @@ module.exports = async (req, res) => {
     console.error('Ошибка:', error);
     return res.status(200).json({
       version: '1.0',
-      response: { text: 'Произошла ошибка при обращении к серверу. Попробуйте еще раз.', end_session: false }
+      response: { text: 'Сбой подключения. Проверьте журналы Vercel.', end_session: false }
     });
   }
 };
